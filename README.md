@@ -500,5 +500,6 @@ If you found this portfolio template helpful, please give it a **star** on GitHu
 ---
 
 <p align="center">
-  <strong>Built with ❤️ by <a href="https://github.com/girishlade111">Girish Balaso Lade</a></strong>
+  <strong>Built with ❤️ by <a href="https://github.com/girishlade111">Girish Balaso Lade</a></strong><br />
+  Built by Girish Lade — <a href="https://ladestack.in">ladestack.in</a>
 </p>

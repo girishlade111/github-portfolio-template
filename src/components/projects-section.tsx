@@ -97,30 +97,35 @@ export const ProjectsSection = () => {
   const fetchRepoData = async () => {
     setIsLoading(true);
     setError(null);
-    
-    try {
-      const response = await fetch(`/api/github/repos?repos=${projectRepos.join(",")}`);
-      
-      if (!response.ok) {
-        if (response.status === 403) {
-          throw new Error("GitHub API rate limit exceeded. Showing cached project data.");
-        } else if (response.status === 404) {
-          throw new Error("Repository data not found. Showing fallback project data.");
-        } else if (response.status >= 500) {
-          throw new Error("GitHub service is currently unavailable. Showing fallback project data.");
-        } else {
-          throw new Error("Failed to fetch live project data. Showing fallback data.");
-        }
-      }
 
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      if (data.repos && data.repos.length > 0) {
-        const updatedProjects = data.repos.map((repo: GithubRepo) => {
+    try {
+      // Static-site friendly: query the public GitHub API directly
+      // (no server-side /api proxy — this repo builds with output:"export").
+      const repoDataPromises = projectRepos.map(async (repoName) => {
+        const response = await fetch(
+          `https://api.github.com/repos/girishlade111/${repoName.trim()}`,
+          { headers: { Accept: "application/vnd.github.v3+json" } }
+        );
+        if (!response.ok) return null;
+        const data = await response.json();
+        return {
+          name: data.name,
+          description: data.description,
+          stars: data.stargazers_count,
+          forks: data.forks_count,
+          language: data.language,
+          topics: data.topics || [],
+          html_url: data.html_url,
+          updated_at: data.updated_at,
+        } as GithubRepo;
+      });
+
+      const repos = (await Promise.all(repoDataPromises)).filter(
+        (repo): repo is GithubRepo => repo !== null
+      );
+
+      if (repos.length > 0) {
+        const updatedProjects = repos.map((repo: GithubRepo) => {
           const fallbackProject = fallbackProjects.find(p => p.name === repo.name);
           return {
             name: repo.name,

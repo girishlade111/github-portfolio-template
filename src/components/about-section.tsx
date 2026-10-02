@@ -18,10 +18,31 @@ export const AboutSection = () => {
   useEffect(() => {
     const fetchGitHubStats = async () => {
       try {
-        const response = await fetch("/api/github/stats");
-        if (response.ok) {
-          const data = await response.json();
-          setGithubStats(data);
+        // Static-site friendly: query the public GitHub API directly
+        // (no server-side /api proxy — this repo builds with output:"export").
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        const dateQuery = oneYearAgo.toISOString().split("T")[0];
+
+        const [commitsResponse, userResponse] = await Promise.all([
+          fetch(
+            `https://api.github.com/search/commits?q=author:girishlade111+author-date:>=${dateQuery}&per_page=1`,
+            { headers: { Accept: "application/vnd.github.cloak-preview+json" } }
+          ),
+          fetch("https://api.github.com/users/girishlade111", {
+            headers: { Accept: "application/vnd.github.v3+json" },
+          }),
+        ]);
+
+        if (commitsResponse.ok && userResponse.ok) {
+          const commitsData = await commitsResponse.json();
+          const userData = await userResponse.json();
+          setGithubStats({
+            totalCommits: commitsData.total_count || 0,
+            publicRepos: userData.public_repos || 0,
+            followers: userData.followers || 0,
+            following: userData.following || 0,
+          });
         }
       } catch (error) {
         console.error("Failed to fetch GitHub stats:", error);
